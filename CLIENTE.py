@@ -29,42 +29,42 @@ except:
     print("Error: No se pudo conectar con el servidor.")
     exit()
 
-cola_mensajes = Queue()
-id_mensaje = 1
+QueueMessage = Queue()
+IDmessage = 1
 
 #Funcion para el hilo de cliente
-def receive_messages():
+def GetMessage():
     while True:
         try:
             mensaje = cliente.recv(1024).decode('utf-8')
             if mensaje:
                 mensaje = json.loads(mensaje)
-                cola_mensajes.put(mensaje)
+                QueueMessage.put(mensaje)
         except:
             print("Desconectado del servidor")
             break
 
-def manejar_mensajes():
-    global id_mensaje
+def HandleMessage():
+    global IDmessage
     while True:
-        if not cola_mensajes.empty():
+        if not QueueMessage.empty():
             # Procesar mensaje
-            mensaje = cola_mensajes.get()
+            mensaje = QueueMessage.get()
             if "id_broadcast" in mensaje:
                 if mensaje['estado_partida'] != "lobby":
-                    if mensaje['id_broadcast'] == id_mensaje:
+                    if mensaje['id_broadcast'] == IDmessage:
                         # Ejecuto la accion del mensaje
-                        id_mensaje += 1
-                        procesar_mensaje(mensaje)
+                        IDmessage += 1
+                        ProcessMessage(mensaje)
                     else:
                         # Devuelvo el mensaje a la cola
-                        cola_mensajes.put(mensaje)
+                        QueueMessage.put(mensaje)
                 else:
-                    procesar_mensaje(mensaje)
+                    ProcessMessage(mensaje)
             else:
-                procesar_mensaje(mensaje)
+                ProcessMessage(mensaje)
 
-def procesar_mensaje(mensaje):
+def ProcessMessage(mensaje):
     nuevo_mensaje = ""
 
     if "tipo" in mensaje:
@@ -95,6 +95,7 @@ def procesar_mensaje(mensaje):
             solicitud_esperada = mensaje["solicitud_esperada"]
             estado_partida = mensaje["estado_partida"]
             ultimos_dados = mensaje["ultimos_dados"]
+            ultimo_turno = mensaje["ultimo_turno"]
             jugadores = mensaje["jugadores"]
             # Mapear colores según el nombre del jugador
             colores = {"Red": Fore.RED, "Yellow": Fore.YELLOW, "Blue": Fore.BLUE, "Green": Fore.GREEN}
@@ -112,36 +113,51 @@ def procesar_mensaje(mensaje):
                 nuevo_mensaje += f"\nJugador: {color_jugador}{nombre}{Style.RESET_ALL}\n"
                 nuevo_mensaje += f"Color: {color_jugador}{color}{Style.RESET_ALL}\n"
 
-                # Mostrar fichas
-                nuevo_mensaje += "Fichas:\n"
+                # Mostrar fichas y contadores de fichas
+                nuevo_mensaje += "Fichas y Count:\n"
                 for ficha, estado in jugador["fichas"].items():
-                    nuevo_mensaje += f"  {color_jugador}{ficha}: {estado}{Style.RESET_ALL}\n"
+                    contador = jugador["contadores_fichas"].get(ficha, "N/A")
+                    nuevo_mensaje += f"  {color_jugador}{ficha}: {estado} | Count: {contador} {Style.RESET_ALL}\n"
 
-                # Mostrar contadores de fichas
-                nuevo_mensaje += "Contadores de fichas:\n"
-                for ficha, contador in jugador["contadores_fichas"].items():
-                    nuevo_mensaje += f"  {color_jugador}{ficha}: {contador} {Style.RESET_ALL}\n"
 
-                '''fichas = jugador["fichas"]
-                contadores_fichas = jugador["contadores_fichas"]
-                
-                nuevo_mensaje += f"\nJugador: {nombre}\n"
-                nuevo_mensaje += f"Color: {color}\n"
-                nuevo_mensaje += "Fichas:\n"
-                for ficha, estado in fichas.items():
-                    nuevo_mensaje += f"  {ficha}: {estado}\n"
-                nuevo_mensaje += "Contadores de fichas:\n"
-                for ficha, contador in contadores_fichas.items():
-                    nuevo_mensaje += f"  {ficha}: {contador}\n"'''
             # Mostrar mensaje
+            if ultimos_dados['D1'] != 0 and ultimos_dados['D2'] != 0:
+                #get name of last player
+                if ultimo_turno == "Red":
+                    GetColorUltimo_turno = Fore.RED
+                elif ultimo_turno == "Yellow":
+                    GetColorUltimo_turno = Fore.YELLOW
+                elif ultimo_turno == "Blue":
+                    GetColorUltimo_turno = Fore.BLUE
+                elif ultimo_turno == "Green":
+                    GetColorUltimo_turno = Fore.GREEN
+
+                nuevo_mensaje += f"\n{GetColorUltimo_turno}Ultimo turno: , {ultimo_turno} {Style.RESET_ALL}"
+                nuevo_mensaje += f"\nÚltimos dados lanzados: D1={ultimos_dados['D1']}, D2={ultimos_dados['D2']}.\n"
+
+                if ultimos_dados['D1'] == ultimos_dados['D2']:
+                    nuevo_mensaje += f"{Fore.MAGENTA}¡Dobles! {turno_actual} puede lanzar otra vez.{Fore.RESET}\n"
+
             if turno_actual != "":
                 # Obtener el color asociado al jugador actual
                 color_turno = colores.get(turno_actual, Fore.WHITE)  # Por defecto, blanco si no hay coincidencia
-                nuevo_mensaje += f"Es el turno de {color_turno}{turno_actual}{Style.RESET_ALL}.\n"
+                nuevo_mensaje += f"Turno de {color_turno}{turno_actual}{Style.RESET_ALL}.\n"
+
             if solicitud_esperada != "":
-                nuevo_mensaje += f"Se espera la solicitud {solicitud_esperada}.\n"
-            if ultimos_dados['D1'] != 0 and ultimos_dados['D2'] != 0:
-                nuevo_mensaje += f"\nÚltimos dados lanzados: D1={ultimos_dados['D1']}, D2={ultimos_dados['D2']}.\n"
+                color_turno = colores.get(solicitud_esperada, Fore.WHITE)  # Por defecto, blanco si no hay coincidencia
+                if solicitud_esperada == "lanzar_dados":
+                    nuevo_mensaje += f"{color_turno}Puedes lanzar dados. Presiona 3 para lanzarlos.{Style.RESET_ALL}\n"
+                elif solicitud_esperada == "mover_ficha":
+                    nuevo_mensaje += f"{color_turno}Puedes mover la ficha. Presiona 4 para moverla.{Style.RESET_ALL}\n"
+                elif solicitud_esperada == "sacar_carcel":
+                    nuevo_mensaje += f"{color_turno}Puedes sacar ficha de la cárcel. Presiona 5 para sacar ficha de la cárcel.{Style.RESET_ALL}\n"
+                elif solicitud_esperada == "sacar_ficha":
+                    nuevo_mensaje += f"{color_turno}Puedes sacar una ficha del tablero. Presiona 6 para sacarla del tablero.{Style.RESET_ALL}\n"
+                else:
+                    nuevo_mensaje += f"Se espera la solicitud {solicitud_esperada}.\n"
+
+
+            
             
             print("\nMensaje recibido:\n" + nuevo_mensaje)
         elif "Blue" in mensaje:
@@ -163,8 +179,8 @@ def procesar_mensaje(mensaje):
             print("\nMensaje recibido:\n" + informacion)
 
 #Hilo para estar en constante funcionamiento
-thread = threading.Thread(target=receive_messages)
-thread2 = threading.Thread(target=manejar_mensajes)
+thread = threading.Thread(target=GetMessage)
+thread2 = threading.Thread(target=HandleMessage)
 thread.start()
 thread2.start()
 
@@ -183,85 +199,92 @@ def seleccion_color():
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de iniciar la partida
-def solicitud_iniciar_partida():
+def RequestStartGame():
     solicitud = {"tipo": "solicitud_iniciar_partida"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de lanzar los dados
-def solicitud_lanzar_dados():
+def RequestLaunchDados():
     d1 = random.randint(1,6)
     d2 = random.randint(1,6)
     solicitud = {"tipo": "lanzar_dados", "dados": {"D1": d1, "D2": d2}}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de sacar ficha del tablero (ficha en estado de meta)
-def solicitud_sacar_ficha():
+def RequestTokenToGoal():
     ficha = input("Ingrese ficha a sacar del tablero: ")
     solicitud = {"tipo": "sacar_ficha", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de sacar ficha de la carcel
-def solicitud_sacar_carcel():
+def RequestGetOutOfJail():
     ficha = input("Ingrese ficha a sacar de la carcel: ")
     solicitud = {"tipo": "sacar_carcel", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de mover ficha en el tablero
-def solicitud_mover_ficha():
+def RequestMoveToken():
     ficha = input("Ingrese ficha a mover en el tablero: ")
     solicitud = {"tipo": "mover_ficha", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 #Enviar solicitud de mover ficha en el tablero
-def solicitud_bot():
+def RequestAddBot():
     solicitud = {"tipo": "solicitud_bot"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-def mostrar_menu_inicial():
+def ShowInitialMenu():
     print("Bienvenido al juego. Colores disponibles:")
     solicitud_color()
     input("Presiona Enter para continuar...")
     print("\nIngrese su nombre y seleccione un color:")
     seleccion_color()
 
-def mostrar_menu_opciones():
-    print(Fore.GREEN + "\nMenú de opciones:")
+def mostrar_menu_OpcLobby():
+    print(Fore.GREEN + "\nMenú de OpcLobby:")
     print("1. Iniciar partida")
     print("2. Incluir un Bot")
     print("3. Lanzar dados")
-    print("4. Sacar ficha del tablero")
+    print("4. Mover ficha en el tablero")
     print("5. Sacar ficha de la cárcel")
-    print("6. Mover ficha en el tablero")
+    print("6. acar ficha del tablero")
     print("0. Salir del juego")
     print("\nIngrese una opción... ")
 
 def altMenu ():
     print(Back.MAGENTA +"3. Lanzar dados, 4. Sacar ficha, 5. Sacar cárcel, 6. Mover ficha, 0. Salir del juego")
 
-opciones = {
-    1: solicitud_iniciar_partida,
-    2: solicitud_bot,
-    3: solicitud_lanzar_dados,
-    4: solicitud_sacar_ficha,
-    5: solicitud_sacar_carcel,
-    6: solicitud_mover_ficha,
+OpcLobby = {
+    1: RequestStartGame,
+    2: RequestAddBot,
+    3: RequestLaunchDados,
+    4: RequestMoveToken,
+    5: RequestGetOutOfJail,
+    6: RequestTokenToGoal,
+}
+
+OpcGame = {
+    3: RequestLaunchDados,
+    4: RequestMoveToken,
+    5: RequestGetOutOfJail,
+    6: RequestTokenToGoal,
 }
 
 # Mostrar colores disponibles y solicitar nombre y color
-mostrar_menu_inicial()
+ShowInitialMenu()
 
 while True:
     try:
-        mostrar_menu_opciones()
+        
         solicitud = int(input())
         
         if solicitud == 0:
             print("Saliendo del juego. ¡Hasta luego!")
             break
         
-        if solicitud in opciones:
-            opciones[solicitud]()
+        if solicitud in OpcLobby:
+            OpcLobby[solicitud]()
         else:
-            print("Error: Opción no válida.")
+            print(Back.RED + "Error: Opción no válida." + Back.RESET)
     except ValueError:
-        print("Error: Debes ingresar un número válido.")
+        print(Back.RED + "Error: Debes ingresar un número válido." + Back.RESET)

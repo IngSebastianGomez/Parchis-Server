@@ -50,7 +50,7 @@ class Cliente(threading.Thread):
             }
 
     # Que es lo que viene en el mensaje
-    def procesar_informacion(self, mensaje):
+    def ProcessInformation(self, mensaje):
         # Se imprime el mensaje recibido
         if self.color == "":
             print(f"[{self.address}]: {mensaje}")
@@ -682,7 +682,7 @@ class Cliente(threading.Thread):
                 mensaje = self.connection.recv(1024).decode('utf-8')
                 if mensaje and self in hilos_clientes:
                     lock.acquire()
-                    self.procesar_informacion(mensaje)
+                    self.ProcessInformation(mensaje)
                     lock.release()
                 else:
                     # Se imprime el mensaje en el servidor
@@ -715,7 +715,7 @@ class Cliente(threading.Thread):
 
 # Funcion para enviar un mensaje a todos los clientes
 def broadcast(mensaje):
-    global id_broadcast
+    global id_broadcast 
     # Se agrega el ID al broadcast
     if "id_broadcast" in mensaje:
         if mensaje["estado_partida"] != "lobby":
