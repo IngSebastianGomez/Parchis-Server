@@ -4,7 +4,7 @@ import json
 from queue import Queue
 import random
 import colorama
-from colorama import Fore,Style,Back,init
+from colorama import Fore, Style, Back, init
 init(autoreset=True)
 
 # Variable para definir si se juega en local
@@ -32,8 +32,10 @@ except:
 QueueMessage = Queue()
 IDmessage = 1
 
-#Funcion para el hilo de cliente
 def GetMessage():
+    """
+    Function to receive messages from the server and put them in a queue.
+    """
     while True:
         try:
             mensaje = cliente.recv(1024).decode('utf-8')
@@ -45,6 +47,9 @@ def GetMessage():
             break
 
 def HandleMessage():
+    """
+    Function to handle the messages received from the server.
+    """
     global IDmessage
     while True:
         if not QueueMessage.empty():
@@ -65,6 +70,9 @@ def HandleMessage():
                 ProcessMessage(mensaje)
 
 def ProcessMessage(mensaje):
+    """
+    Function to process the received message from the server.
+    """
     nuevo_mensaje = ""
 
     if "tipo" in mensaje:
@@ -102,6 +110,7 @@ def ProcessMessage(mensaje):
             # Crear mensaje
             nuevo_mensaje = f"El estado de la partida es {estado_partida}.\n"
             
+            
             # Mostrar jugadores
             for jugador in jugadores:
                 nombre = jugador["nombre"]
@@ -132,6 +141,11 @@ def ProcessMessage(mensaje):
                 elif ultimo_turno == "Green":
                     GetColorUltimo_turno = Fore.GREEN
 
+                if estado_partida == "juego":
+                    nuevo_mensaje += Back.MAGENTA +"3. Lanzar dados, 4. Mover ficha, 5. Sacar cárcel, 6. Sacar ficha del tablero, 0. Salir del juego" + Back.RESET
+                elif estado_partida == "lobby":
+                    nuevo_mensaje += Back.MAGENTA +"1. Iniciar partida, 2. Incluir un Bot, 0. Salir del juego" + Back.RESET                    
+
                 nuevo_mensaje += f"\n{GetColorUltimo_turno}Ultimo turno: , {ultimo_turno} {Style.RESET_ALL}"
                 nuevo_mensaje += f"\nÚltimos dados lanzados: D1={ultimos_dados['D1']}, D2={ultimos_dados['D2']}.\n"
 
@@ -160,19 +174,23 @@ def ProcessMessage(mensaje):
             
             
             print("\nMensaje recibido:\n" + nuevo_mensaje)
-        elif "Blue" in mensaje:
+        elif "Blue" in mensaje or "Yellow" in mensaje or "Green" in mensaje or "Red" in mensaje:
             blue = mensaje["Blue"]
             yellow = mensaje["Yellow"]
             green = mensaje["Green"]
             red = mensaje["Red"]
-            informacion = (
-                f"Colores disponibles:\n"
-                f"{Fore.BLUE}Blue: {blue}\n"
-                f"{Fore.YELLOW}Yellow: {yellow}\n"
-                f"{Fore.GREEN}Green: {green}\n"
-                f"{Fore.RED}Red: {red}\n"
-                f"{Style.RESET_ALL}"  # Restablece el color al valor predeterminado
-    )
+            informacion = "Colores disponibles:\n"
+    
+            if blue:
+                informacion += f"{Fore.BLUE}----- Blue -----\n"
+            if yellow:
+                informacion += f"{Fore.YELLOW}----- Yellow -----\n"
+            if green:
+                informacion += f"{Fore.GREEN}----- Green -----\n"
+            if red:
+                informacion += f"{Fore.RED}----- Red -----\n"
+    
+            informacion += Style.RESET_ALL  # Restablece el color al valor predeterminado
             print("\nMensaje recibido:\n" + informacion)
         else:
             informacion = "Mensaje desconocido"
@@ -184,74 +202,100 @@ thread2 = threading.Thread(target=HandleMessage)
 thread.start()
 thread2.start()
 
-#Enviar solicitud de colores disponibles
 def solicitud_color():
+    """
+    Function to send a request for available colors to the server.
+    """
     solicitud = {"tipo": "solicitud_color"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
     input("Presiona Enter para continuar...")
     
     
-#Enviar solicitud de eleccion de color
 def seleccion_color():
+    """
+    Function to send a request for color selection to the server.
+    """
     nombre = input("Ingrese nombre: ")
     color = input("Ingrese color: ")
     solicitud = {"tipo": "seleccion_color", "nombre": nombre, "color": color}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de iniciar la partida
 def RequestStartGame():
+    """
+    Function to send a request to start the game to the server.
+    """
     solicitud = {"tipo": "solicitud_iniciar_partida"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de lanzar los dados
 def RequestLaunchDados():
+    """
+    Function to send a request to roll the dice to the server.
+    """
     d1 = random.randint(1,6)
     d2 = random.randint(1,6)
     solicitud = {"tipo": "lanzar_dados", "dados": {"D1": d1, "D2": d2}}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de sacar ficha del tablero (ficha en estado de meta)
 def RequestTokenToGoal():
+    """
+    Function to send a request to remove a token from the board (goal state) to the server.
+    """
     ficha = input("Ingrese ficha a sacar del tablero: ")
     solicitud = {"tipo": "sacar_ficha", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de sacar ficha de la carcel
 def RequestGetOutOfJail():
+    """
+    Function to send a request to remove a token from jail to the server.
+    """
     ficha = input("Ingrese ficha a sacar de la carcel: ")
     solicitud = {"tipo": "sacar_carcel", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de mover ficha en el tablero
 def RequestMoveToken():
+    """
+    Function to send a request to move a token on the board to the server.
+    """
     ficha = input("Ingrese ficha a mover en el tablero: ")
     solicitud = {"tipo": "mover_ficha", "ficha": ficha}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-#Enviar solicitud de mover ficha en el tablero
 def RequestAddBot():
+    """
+    Function to send a request to add a bot to the game to the server.
+    """
     solicitud = {"tipo": "solicitud_bot"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
 def ShowInitialMenu():
+    """
+    Function to show the initial menu and request name and color selection.
+    """
     print("Bienvenido al juego. Colores disponibles:")
     solicitud_color()
     input("Presiona Enter para continuar...")
     print("\nIngrese su nombre y seleccione un color:")
     seleccion_color()
+    mostrar_menu_OpcLobby()
 
 def mostrar_menu_OpcLobby():
+    """
+    Function to show the menu options in the lobby state.
+    """
     print(Fore.GREEN + "\nMenú de OpcLobby:")
     print("1. Iniciar partida")
     print("2. Incluir un Bot")
     print("3. Lanzar dados")
     print("4. Mover ficha en el tablero")
     print("5. Sacar ficha de la cárcel")
-    print("6. acar ficha del tablero")
+    print("6. Sacar ficha del tablero")
     print("0. Salir del juego")
     print("\nIngrese una opción... ")
 
 def altMenu ():
+    """
+    Function to show the alternative menu options.
+    """
     print(Back.MAGENTA +"3. Lanzar dados, 4. Sacar ficha, 5. Sacar cárcel, 6. Mover ficha, 0. Salir del juego")
 
 OpcLobby = {
