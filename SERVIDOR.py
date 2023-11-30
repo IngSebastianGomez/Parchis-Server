@@ -421,7 +421,7 @@ class Cliente(threading.Thread):
             # Se actualiza el ultimo movimiento
             ultima_ficha = ficha
             # Se actualiza la posicion de la ficha
-            casillas_salida = {"Yellow": 56, "Blue": 5, "Green": 22, "Red": 39}
+            casillas_salida = {"Yellow": 5, "Blue": 22, "Green": 56, "Red": 39}
             self.fichas[ficha] = casillas_salida[self.color]
             # Se actualiza los turnos
             if self.turnos == 0:
