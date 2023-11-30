@@ -16,9 +16,9 @@ if local:
     IP_BOT_PRIVADA = "localhost"
 else:
     # IP servidor publica
-    IP_SERVER_PUBLICA = "3.15.208.30"
+    IP_SERVER_PUBLICA = "192.168.20.12"
     # IP bot privada
-    IP_BOT_PRIVADA = "172.31.1.101"
+    IP_BOT_PRIVADA = "192.168.20.12"
 
 # Puerto servidor
 PORT_SERVER = 8001   

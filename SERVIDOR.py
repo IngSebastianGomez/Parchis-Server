@@ -1,17 +1,3 @@
-'''
-SERVIDOR PARA EL JUEGO PARQUES (PROYECTO FINAL SISTEMAS DISTRIBUIDOS)
-
-ELABORADO POR:
-Johan Fernando Acuña Pérez
-Sarah Sofia Palacio Vanegas
-Santiago Posada Florez
-Cristian Andres Grajales Perez
-
-Nota: Ver 'estructura.txt' para conocer la estructura de los mensajes
-Nota 2: Ver 'tablero.png' para conocer la estructura del tablero
-'''
-
-# Librerias
 import socket
 import threading
 import json
@@ -28,9 +14,9 @@ if local:
     IP_BOT_PUBLICA = "localhost"
 else:
     # IP servidor privada
-    IP_SERVER_PRIVADA = "172.31.9.104"
+    IP_SERVER_PRIVADA = "192.168.20.12"
     # IP bot publica
-    IP_BOT_PUBLICA = "18.117.119.109"
+    IP_BOT_PUBLICA = "192.168.20.12"
 
 # Puerto servidor
 PORT_SERVER = 8001

@@ -266,7 +266,7 @@ for i, solicitud in enumerate(solicitudes):
     boton.grid(row=i, column=0, padx=10, pady=10)
 
 # Agregar imagen del tablero
-imagen_tablero = tk.PhotoImage(file="tablero.png")
+imagen_tablero = tk.PhotoImage(file="Tablero.png")
 tablero_label = tk.Label(ventana, image=imagen_tablero)
 tablero_label.grid(row=0, column=1, rowspan=len(solicitudes))
 

@@ -3,6 +3,9 @@ import threading
 import json
 from queue import Queue
 import random
+import colorama
+from colorama import Fore,Style,Back,init
+init(autoreset=True)
 
 # Variable para definir si se juega en local
 local = True
@@ -13,7 +16,7 @@ if local:
     IP_SERVER_PUBLICA = "localhost"
 else:
     # IP servidor publica
-    IP_SERVER_PUBLICA = "3.15.208.30"
+    IP_SERVER_PUBLICA = "192.168.20.12"
 
 # Puerto servidor
 PORT_SERVER = 8001
@@ -93,19 +96,33 @@ def procesar_mensaje(mensaje):
             estado_partida = mensaje["estado_partida"]
             ultimos_dados = mensaje["ultimos_dados"]
             jugadores = mensaje["jugadores"]
+            # Mapear colores según el nombre del jugador
+            colores = {"Red": Fore.RED, "Yellow": Fore.YELLOW, "Blue": Fore.BLUE, "Green": Fore.GREEN}
             # Crear mensaje
             nuevo_mensaje = f"El estado de la partida es {estado_partida}.\n"
-            if turno_actual != "":
-                nuevo_mensaje += f"Es el turno de {turno_actual}.\n"
-            if solicitud_esperada != "":
-                nuevo_mensaje += f"Se espera la solicitud {solicitud_esperada}.\n"
-            if ultimos_dados['D1'] != 0 and ultimos_dados['D2'] != 0:
-                nuevo_mensaje += f"\nÚltimos dados lanzados: D1={ultimos_dados['D1']}, D2={ultimos_dados['D2']}.\n"
+            
             # Mostrar jugadores
             for jugador in jugadores:
                 nombre = jugador["nombre"]
                 color = jugador["color"]
-                fichas = jugador["fichas"]
+
+                # Obtener el color asociado al jugador actual
+                color_jugador = colores.get(color, Fore.WHITE)  # Por defecto, blanco si no hay coincidencia
+
+                nuevo_mensaje += f"\nJugador: {color_jugador}{nombre}{Style.RESET_ALL}\n"
+                nuevo_mensaje += f"Color: {color_jugador}{color}{Style.RESET_ALL}\n"
+
+                # Mostrar fichas
+                nuevo_mensaje += "Fichas:\n"
+                for ficha, estado in jugador["fichas"].items():
+                    nuevo_mensaje += f"  {color_jugador}{ficha}: {estado}{Style.RESET_ALL}\n"
+
+                # Mostrar contadores de fichas
+                nuevo_mensaje += "Contadores de fichas:\n"
+                for ficha, contador in jugador["contadores_fichas"].items():
+                    nuevo_mensaje += f"  {color_jugador}{ficha}: {contador} {Style.RESET_ALL}\n"
+
+                '''fichas = jugador["fichas"]
                 contadores_fichas = jugador["contadores_fichas"]
                 
                 nuevo_mensaje += f"\nJugador: {nombre}\n"
@@ -115,15 +132,31 @@ def procesar_mensaje(mensaje):
                     nuevo_mensaje += f"  {ficha}: {estado}\n"
                 nuevo_mensaje += "Contadores de fichas:\n"
                 for ficha, contador in contadores_fichas.items():
-                    nuevo_mensaje += f"  {ficha}: {contador}\n"
+                    nuevo_mensaje += f"  {ficha}: {contador}\n"'''
             # Mostrar mensaje
+            if turno_actual != "":
+                # Obtener el color asociado al jugador actual
+                color_turno = colores.get(turno_actual, Fore.WHITE)  # Por defecto, blanco si no hay coincidencia
+                nuevo_mensaje += f"Es el turno de {color_turno}{turno_actual}{Style.RESET_ALL}.\n"
+            if solicitud_esperada != "":
+                nuevo_mensaje += f"Se espera la solicitud {solicitud_esperada}.\n"
+            if ultimos_dados['D1'] != 0 and ultimos_dados['D2'] != 0:
+                nuevo_mensaje += f"\nÚltimos dados lanzados: D1={ultimos_dados['D1']}, D2={ultimos_dados['D2']}.\n"
+            
             print("\nMensaje recibido:\n" + nuevo_mensaje)
         elif "Blue" in mensaje:
             blue = mensaje["Blue"]
             yellow = mensaje["Yellow"]
             green = mensaje["Green"]
             red = mensaje["Red"]
-            informacion = f"Colores disponibles:\nBlue: {blue}\nYellow: {yellow}\nGreen: {green}\nRed: {red}\n"
+            informacion = (
+                f"Colores disponibles:\n"
+                f"{Fore.BLUE}Blue: {blue}\n"
+                f"{Fore.YELLOW}Yellow: {yellow}\n"
+                f"{Fore.GREEN}Green: {green}\n"
+                f"{Fore.RED}Red: {red}\n"
+                f"{Style.RESET_ALL}"  # Restablece el color al valor predeterminado
+    )
             print("\nMensaje recibido:\n" + informacion)
         else:
             informacion = "Mensaje desconocido"
@@ -139,6 +172,8 @@ thread2.start()
 def solicitud_color():
     solicitud = {"tipo": "solicitud_color"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
+    input("Presiona Enter para continuar...")
+    
     
 #Enviar solicitud de eleccion de color
 def seleccion_color():
@@ -182,32 +217,48 @@ def solicitud_bot():
     solicitud = {"tipo": "solicitud_bot"}
     cliente.sendall(json.dumps(solicitud).encode('utf-8'))
 
-def mostrar_menu():
-    print("1. solicitud_color")
-    print("2. seleccion_color")
-    print("3. solicitud_iniciar_partida")
-    print("4. solicitud_lanzar_dados")
-    print("5. solicitud_sacar_ficha")
-    print("6. solicitud_sacar_carcel")
-    print("7. solicitud_mover_ficha")
-    print("8. solicitud_bot")
+def mostrar_menu_inicial():
+    print("Bienvenido al juego. Colores disponibles:")
+    solicitud_color()
+    input("Presiona Enter para continuar...")
+    print("\nIngrese su nombre y seleccione un color:")
+    seleccion_color()
+
+def mostrar_menu_opciones():
+    print(Fore.GREEN + "\nMenú de opciones:")
+    print("1. Iniciar partida")
+    print("2. Incluir un Bot")
+    print("3. Lanzar dados")
+    print("4. Sacar ficha del tablero")
+    print("5. Sacar ficha de la cárcel")
+    print("6. Mover ficha en el tablero")
+    print("0. Salir del juego")
     print("\nIngrese una opción... ")
 
+def altMenu ():
+    print(Back.MAGENTA +"3. Lanzar dados, 4. Sacar ficha, 5. Sacar cárcel, 6. Mover ficha, 0. Salir del juego")
+
 opciones = {
-    1: solicitud_color,
-    2: seleccion_color,
-    3: solicitud_iniciar_partida,
-    4: solicitud_lanzar_dados,
-    5: solicitud_sacar_ficha,
-    6: solicitud_sacar_carcel,
-    7: solicitud_mover_ficha,
-    8: solicitud_bot
+    1: solicitud_iniciar_partida,
+    2: solicitud_bot,
+    3: solicitud_lanzar_dados,
+    4: solicitud_sacar_ficha,
+    5: solicitud_sacar_carcel,
+    6: solicitud_mover_ficha,
 }
 
-mostrar_menu()
+# Mostrar colores disponibles y solicitar nombre y color
+mostrar_menu_inicial()
+
 while True:
     try:
+        mostrar_menu_opciones()
         solicitud = int(input())
+        
+        if solicitud == 0:
+            print("Saliendo del juego. ¡Hasta luego!")
+            break
+        
         if solicitud in opciones:
             opciones[solicitud]()
         else:
